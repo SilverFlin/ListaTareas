@@ -8,6 +8,8 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ListView
+import androidx.room.Room
+import androidx.room.Room.databaseBuilder
 
 class MainActivity : AppCompatActivity() {
     lateinit var et_tarea: EditText
@@ -15,6 +17,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var listview_tareas: ListView
     lateinit var lista_tareas: ArrayList<String>
     lateinit var adapter: ArrayAdapter<String>
+    lateinit var db: AppDatabase
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,12 +30,21 @@ class MainActivity : AppCompatActivity() {
 
         lista_tareas = ArrayList()
 
+        db = databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java, "lista-tareas"
+        ).allowMainThreadQueries().build()
+
+        cargar_tareas()
+
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, lista_tareas)
 
         btn_agregar.setOnClickListener {
-            var tarea = et_tarea.text.toString()
-            if (!tarea.isNullOrEmpty()) {
-                lista_tareas.add(tarea)
+            var tarea_str = et_tarea.text.toString()
+            if (!tarea_str.isNullOrEmpty()) {
+                var tarea = Tarea(desc = tarea_str)
+                db.tareaDao().agregarTarea(tarea)
+                lista_tareas.add(tarea_str)
 
                 adapter.notifyDataSetChanged()
 
@@ -41,9 +53,26 @@ class MainActivity : AppCompatActivity() {
 
 
         }
-        listview_tareas.onItemClickListener = AdapterView.OnItemClickListener{parent, view, position, id ->
-            lista_tareas.removeAt(position)
-            adapter.notifyDataSetChanged()
+        listview_tareas.onItemClickListener =
+            AdapterView.OnItemClickListener { parent, view, position, id ->
+                var tarea_desc = lista_tareas[position]
+
+                var tarea = db.tareaDao().getTarea(tarea_desc)
+
+                db.tareaDao().eliminarTarea(tarea)
+
+
+                lista_tareas.removeAt(position)
+                adapter.notifyDataSetChanged()
+            }
+    }
+
+    private fun cargar_tareas() {
+        var lista_db = db.tareaDao().obtenerTareas()
+
+        for (tarea in lista_db){
+            lista_tareas.add(tarea.desc)
         }
+
     }
 }

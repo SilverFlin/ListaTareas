@@ -10,6 +10,9 @@ interface TareaDAO {
     @Query("SELECT * FROM tareas")
     fun obtenerTareas(): List<Tarea>
 
+    @Query("SELECT * FROM tareas WHERE `desc` = :desc")
+    fun getTarea(desc: String):Tarea
+
     @Insert
     fun agregarTarea(tarea: Tarea)
 
